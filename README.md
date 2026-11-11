@@ -36,6 +36,12 @@ Use scoped tags for focused operations. A focused run must retain its prerequisi
 
 For Task-based repositories, expose `play:setup`, `play:update`, `play:setup:check`, and `play:update:check`. Pass the target explicitly as positional arguments and select Ansible tags with `T`. Use the same target validation and dispatch for live runs and previews, and accept the same public inputs for syntax checks and tag listings. Document the target grammar, supported layer and inventory combinations, tags, and prerequisite behavior in the project. Keep the root `Taskfile.yml` focused on wiring and command discovery, with executable procedures grouped by responsibility under `.taskfiles/`.
 
+### Mapping Meridian identities to Ansible targets
+
+Projects using [Meridian](https://github.com/d1ys3nk0/meridian#qualified-identities) document how each operation’s arguments resolve to a qualified identity, inventory, layer, and host selection. Resolve and validate the effective selection before accessing credentials or performing side effects. A short selector is sufficient when the project fixes its enclosing scope and validates that it resolves unambiguously.
+
+A Cell operation selects a deployment target. A Space operation selects an application environment and may involve multiple Cells. An operation limited to one placement of a Space selects a logical deployment. Document the scope of the resources each operation can affect, including Realm-shared resources. Define lock and migration completion keys for the affected scope and document how operations with overlapping scopes coordinate.
+
 ## Variable ownership and precedence
 
 | Path | Declares |
@@ -115,11 +121,11 @@ The project selects the production inventory and the web setup playbook through 
 
 ## Migrations
 
-Put historical transitions, one-time repairs, and cutovers in `migrations/YYMMDDHHMMSS-slug.yml`, or `migrations/<cluster>/YYMMDDHHMMSS-slug.yml` for a cluster-scoped transition. Use lowercase hyphenated slugs and preserve the migration identity on relocation. Keep rollback playbooks under `migrations/rollback/`, outside the forward selection. Keep migration logic inline where practical and put necessary exclusive helpers and adjacent tests under `lib/migrations/<identity>/`. A migration may call a role to converge replacement state. Permanent entrypoints and roles stay free of historical detection and cleanup.
+Put historical transitions, one-time repairs, and cutovers in `migrations/YYMMDDHHMMSS-slug.yml`, or `migrations/<cluster>/YYMMDDHHMMSS-slug.yml` for a cluster-scoped transition. Use lowercase hyphenated slugs and preserve the migration identity on relocation. The optional `<cluster>` directory organizes files. Document how the project resolves that selector to affected targets and hosts. Keep rollback playbooks under `migrations/rollback/`, outside the forward selection. Keep migration logic inline where practical and put necessary exclusive helpers and adjacent tests under `lib/migrations/<identity>/`. A migration may call a role to converge replacement state. Permanent entrypoints and roles stay free of historical detection and cleanup.
 
-Document whether migrations run explicitly or before convergence, the supported targets and required inputs, and how completion and rollback work. Validate required inputs and actual historical state before side effects. Make migrations idempotent without relying on completion records and safe to retry after interruption. A known fresh or verified completed state is a successful no-op. Unreadable, conflicting, or unknown state fails with an actionable diagnostic. A read-only preview does not mutate infrastructure, acquire mutation locks, or record completion.
+Follow [Kerbmark’s infrastructure operations guidance](https://github.com/d1ys3nk0/kerbmark/blob/main/infrastructure/migrations.md#idempotent-migrations) for idempotency, migration outcomes, completion, and read-only previews. Document whether migration playbooks run explicitly or before convergence, their supported targets and required inputs, and how the Ansible dispatcher represents each outcome and invokes rollback. Validate required inputs and inspect the historical state before the playbook makes changes.
 
-For a replacement that transfers state, use two ordered forward migrations. Prepare and verify the replacement first, then remove obsolete resources after confirming cutover and readiness on the target. Identify superseded managed resources when designing the replacement and include their removal in the change. Preserve resources required for the agreed rollback. When migrations run before convergence and cleanup must wait, use a distinct deferred result that leaves the migration pending. Retain migrations and exclusive assets until application and independent verification are recorded for every affected target, including inactive targets.
+For a replacement that transfers state, use two ordered forward migrations. Prepare and verify the replacement first, then remove obsolete resources after confirming cutover and readiness on the target. Identify superseded managed resources when designing the replacement and include their removal in the change. Preserve resources required for the agreed rollback. When migrations run before convergence and cleanup must wait, have the dispatcher report Kerbmark’s deferred outcome distinctly from success and failure.
 
 ## Verification
 
