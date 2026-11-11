@@ -2,6 +2,8 @@
 
 Armada is an opinionated set of conventions for organizing server fleets and infrastructure stacks in a single Ansible repository. Start with the inventory to find a target, the layer playbook to see what runs and in what order, and the layer variables to see how each role is configured.
 
+The [Kerbmark Guidelines](https://github.com/d1ys3nk0/kerbmark) defer to Armada for organizing and operating Ansible repositories.
+
 ## Repository layout
 
 A **layer** is a project-defined operational grouping of roles. It selects and orders capabilities for a target and owns their execution context. An inventory identifies the hosts and describes their machine-specific inputs. A stack can span multiple hosts, and a host can participate in multiple layers.
