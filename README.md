@@ -15,11 +15,11 @@ A **layer** is a project-defined operational grouping of roles. It selects and o
 | `variables/` | Global declarations, composition settings, and a directory for each layer that declares role inputs or scoped values. |
 | `roles/<role>/` | One reusable capability and its implementation, defaults, assets, and tests. |
 | `assets/` | Controller-side payloads genuinely shared across roles. |
-| `lib/` | Controller-side helpers grouped by purpose. |
+| `lib/` | Shared controller-side helpers grouped by purpose. |
 | `tests/` | Repository-wide behavior and test infrastructure shared across roles. |
-| `migrations/` | Historical transitions and their rollback playbooks. |
+| `migrations/<layer>/YYMMDDHHMMSS-slug/` | One historical transition and its operator notes, playbooks, and dedicated assets. |
 
-Keep each path only where it has content. Use populated YAML files with names that describe their purpose. Keep controller helpers in `lib/` and installed programs in their owning roles.
+Keep each path only where it has content. Use populated YAML files with names that describe their purpose. Keep shared controller helpers in `lib/` and installed programs in their owning roles.
 
 ## Layer entrypoints and target selection
 
@@ -121,9 +121,23 @@ The project selects the production inventory and the web setup playbook through 
 
 ## Migrations
 
-Put historical transitions, one-time repairs, and cutovers in `migrations/YYMMDDHHMMSS-slug.yml`, or `migrations/<cluster>/YYMMDDHHMMSS-slug.yml` for a cluster-scoped transition. Use lowercase hyphenated slugs and preserve the migration identity on relocation. The optional `<cluster>` directory organizes files. Document how the project resolves that selector to affected targets and hosts. Keep rollback playbooks under `migrations/rollback/`, outside the forward selection. Keep migration logic inline where practical and put necessary exclusive helpers and adjacent tests under `lib/migrations/<identity>/`. A migration may call a role to converge replacement state. Permanent entrypoints and roles stay free of historical detection and cleanup.
+Put each historical transition, one-time repair, or cutover in its own `migrations/<layer>/YYMMDDHHMMSS-slug/` directory. Use the owning layer, the migration's UTC creation timestamp, and a lowercase, hyphen-separated slug. Keep the directory name stable as the migration ID.
 
-Follow [Kerbmark’s infrastructure operations guidance](https://github.com/d1ys3nk0/kerbmark/blob/main/infrastructure/migrations.md#idempotent-migrations) for idempotency, migration outcomes, completion, and read-only previews. Document whether migration playbooks run explicitly or before convergence, their supported targets and required inputs, and how the Ansible dispatcher represents each outcome and invokes rollback. Validate required inputs and inspect the historical state before the playbook makes changes.
+```text
+migrations/<layer>/YYMMDDHHMMSS-slug/
+  apply.yml       # Required forward playbook
+  README.md       # Required operator notes
+  rollback.yml    # Optional rollback playbook
+  aux_script.py   # Example of a migration-specific helper
+```
+
+Keep migration-specific scripts, tasks, templates, fixtures, and tests in that directory. Keep shared helpers in their owning locations. A migration may call a reusable role to converge replacement state. Permanent entrypoints and roles stay free of historical detection and cleanup.
+
+In the migration's README, record its purpose, affected targets, prerequisites, verification steps, and rollback or recovery procedure. The layer groups migrations by operational ownership. The project's dispatcher resolves and validates the inventory, host selection, and affected operation scope before loading credentials or performing side effects.
+
+Select `apply.yml` for forward execution and invoke `rollback.yml` only through an explicit rollback operation. When a migration has no rollback playbook, follow its documented recovery procedure. When relocating an existing migration, update its callers and preserve its identity, execution order, and completion records.
+
+Follow [Kerbmark’s infrastructure operations guidance](https://github.com/d1ys3nk0/kerbmark/blob/main/infrastructure/migrations.md#idempotent-migrations) for idempotency, migration outcomes, completion, and read-only previews. Document whether migrations run explicitly or before convergence, which inputs they require, and how the Ansible dispatcher represents each outcome and invokes rollback. Validate required inputs and inspect the historical state before the playbook makes changes.
 
 For a replacement that transfers state, use two ordered forward migrations. Prepare and verify the replacement first, then remove obsolete resources after confirming cutover and readiness on the target. Identify superseded managed resources when designing the replacement and include their removal in the change. Preserve resources required for the agreed rollback. When migrations run before convergence and cleanup must wait, have the dispatcher report Kerbmark’s deferred outcome distinctly from success and failure.
 
