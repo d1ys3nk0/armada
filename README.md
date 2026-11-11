@@ -42,6 +42,10 @@ Projects using [Meridian](https://github.com/d1ys3nk0/meridian#qualified-identit
 
 A Cell operation selects a deployment target. A Space operation selects an application environment and may involve multiple Cells. An operation limited to one placement of a Space selects a logical deployment. Document the scope of the resources each operation can affect, including Realm-shared resources. Define lock and migration completion keys for the affected scope and document how operations with overlapping scopes coordinate.
 
+Area may filter placement or host selection, but it does not distinguish Cell identities. Resolve the Cell by World + Realm + Cell and derive its Areas from placement configuration. Preserve the project's documented target grammar; adding an Area argument must not create another Cell with the same qualified identity.
+
+A whole-Cell operation must account for every affected Area and host. A partial host selection must not mark a whole-Cell migration complete; any narrower completion record must identify and verify its actual scope. Coordinate locks for overlapping selections, including partial and whole-Cell operations, so different selectors cannot independently mutate the same resources.
+
 ## Variable ownership and precedence
 
 | Path | Declares |
